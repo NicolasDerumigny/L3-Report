@@ -1,0 +1,202 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+ 
+\usepackage{multicol,caption}
+%\usepackage{pgfplots}
+\usepackage{graphicx}
+\usepackage{footnote}
+\makesavenoteenv{tabular}
+\makesavenoteenv{figure}
+\newenvironment{Figure}
+  {\par\medskip\noindent\minipage{\linewidth}}
+  {\endminipage\par\bigskip\medskip}
+  %figure inside multicols
+
+\setlength{\oddsidemargin}{0pt}
+% Marge gauche sur pages impaires
+\setlength{\evensidemargin}{0pt}
+% Marge gauche sur pages paires
+\setlength{\textwidth}{480pt}
+% Largeur de la zone de texte 
+\setlength{\topmargin}{0pt}
+% Pas de marge en haut
+\setlength{\headheight}{13pt}
+% Haut de page
+\setlength{\headsep}{10pt}
+% Entre le haut de page et le texte
+\setlength{\footskip}{40pt}
+% Bas de page + séparation
+\setlength{\textheight}{633pt}
+% Hauteur de la zone de texte 
+
+
+\title{Micro-architectural Adaptation of Codelets using gem5 and CERE}
+\author{Nicolas Derumigny \\
+\small ENS de Lyon 
+\and Pablo de Oliveira Castro\\ 
+\small Université de Versailles Saint-Quentin-en-Yvelines}
+\date{}
+
+
+\begin{document}
+
+\maketitle
+
+\smallskip
+
+\begin{multicols}{2}
+
+\begin{abstract}
+More and more efforts are deployed to increase the speed and the efficiency of the CPUs. Therefore, these progresses target a general speeding ; whereas the diversity of the applications leads us to think of an architectural adaptation.
+
+
+Sometimes, even the different regions of the application have different architecture preferences, depending of the type of data and the operations they are dealing with. The codelet approach, based on the use of the software Codelet Extractor and REplayer (CERE), allows to isolate and tune each section of the application individually, showing which improvements on the hardware side leads to better performance.
+
+
+This report %?
+present an overview of the possibility of micro-architectural adaptation using the x86 instruction set simulated by gem5, based on an power-efficient point of view.%MCPAT ?
+ Its impact has been measured on both sequential and parallel applications using the NAS and PARSEC benchmark suites. 
+%comment result when they where
+
+\end{abstract}
+
+
+\section{Introduction}
+The development of new CPU architecture is always a compromise between several parameters. The common approach is to minimise the cost and maximise the average execution time of a suite of benchmark representative of the user's most frequent task. In HPC,% ?
+the needs depends mostly of the application run: thus, architectural adaptations could greatly improve the power-efficiency of this application.
+
+
+This adaptation is already in use on a smaller scale: heterogeneus multicore systems (big.LITTLE), widely spreads in the embedded domain, are designed to decrease power consumption on small tasks (little cluster). They nevertheless still be able to deliver high performance on a small amount of time, thanks to the big cluster. This may be adapted on different calcul specialisation, as GPGPUs and CPUs already do: GPGPU are efficient in highly-scalable parallel applications, and CPUs are faster on sequential ones.
+
+One other illustration of this material adaptation is the boost technologie, either on GPU than on CPU. It increase frequency during high loads, while the chip is under a given temperature, or does not reach a thermal threshold. %Power efficiency ?
+
+\paragraph{}
+The gem5\cite{gem5-sim} has been used to realistically quantify micro-architecture impacts on softwares: it allowsto fine-tune parameters without using different processors. As it emulate a whole linux system, the measure could be really slow, that is why running only codelets gives a serious advantage comparing to measure the entire application. 
+% GIVE A SPEEDUP !
+
+Four x86 CPUs were simulated, two based on the Cortex A-15 and the Cortex-A7 models\cite{DBLP:conf/samos/EndoCC14}, the i5-3550 and the x5-Z8300, both with turbo and non-turbo frequency. All of them are quad-core without hyperthreading, as it is often disable in clusters due to non-stable performance. %??
+Due to simulation time, all CPUs where simulated using the AtomicSimpleCPU.
+
+The codelets used were extracted using CERE\cite{CERE} tool, originally taken from NAS\cite{NAS} sequential benchmark suite and PARSEC\cite{PARSEC} benchmark suite. We chose NAS IS sequential as a simple serial application and pthread-disabled x264 for a more complicated one. Blackscholes and Freqmine, two OpenMP applications from PARSEC suite, were chosen to test multicore performance.
+
+
+The energy consumption was calculate using MCPAT\cite{MCPAT} and taken as a measure of the efficiency of each simulated CPU. Indeed, power consumption is the ideal measurement for the architecture tuning, as it delimit on one side the maximum computational power of the CPU at fixed architecture (due to frequency limits) and on the other side the cost to run it.
+
+This paper explains in section \ref{bckgrnd} the related work and its line comparing to the current research. Section \ref{sim} describes the compatibility between gem5 and the codelets extracted by CERE, along with the models, the values and the applications chosen for the simulations. The results are commented on section \ref{results}. We finally conclude in the section \ref{ccl}.
+
+
+\section{Background}
+\label{bckgrnd}
+TODO !
+%other publications on related domain(s)
+
+\section{Simulation framework}
+\label{sim}
+
+\subsection{The gem5 simulator}
+
+The gem5 simulator can be run in two different modes: syscall emulation (SE) and fullsystem mode (FS). The Syscall emulation mode simulate only the comportement of the CPU inside a linux operating system, and therefore cannot efficiently simulate multi-threaded application, as no scheduler has been implemented. Besides, SE mode required a static linkage of all the required libraries.
+
+On the contrary, the fullsystem mode emulate a full CPU; as the OS is emulated, the simulation is really slow (about fifteen minutes to boot linux on the x86 AtomicSimpleCPU). Nevertheless, FS mode is more accurate and more flexible. Indeed, FS mode can handle dynamic libraries, assuming that they are well installed in the virtual disk image. 
+Moreover, gem5 featured a checkpoint functionality which avoid booting again when the CPU is changed. % (keep ?)s
+\subsubsection{Syscall emulation mode}
+Two changes on gem5 has been made to allow the use of CERE sequential codelets. First, the \textit{getdents} syscall has been implemented, which is called inside the \textit{readdir} function, used in the codelet memory mapping function. The second change concern a bug occurring when reading EOF with the syscall \textit{read} while providing an invalid pointer: it should work and write nothing, but caused a page fault in gem5. 
+%Both patch were submitted to gem5 community and wait for acceptation.
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{vari_se.eps}
+\captionof{figure}{\label{vari_se}Variations of the codelet loop execution time on NAS IS class W benchmark using the i5-3550 configuration without turbo.}
+\end{Figure}
+
+
+In order to statically compile codelets with CERE\footnote{ Only the version 0.2 of CERE was used in this paper.}, the argument \textit{-static} must be provide at the linkage, either in the makefile or in the \textit{lel.py} CERE source file. Noting that this could provoque some relocation error when specifying the entry point of the program: offset 0x60000000 (used as default start point in CERE) is used to place the standard C library in sequential NAS IS. Experimentally, offset 0x40000000 did not cause any trouble when compiling sequential codelets. 
+%% speaking of libiomp5.a ?
+
+\paragraph{}
+With these implementations, and assuming that all the syscalls have been implemented inside the gem5 simulator, any sequential codelet should work in SE mode. Given that there is no scheduler in gem5 SE mode, and given that there is no proper implementation of pthread implementation in SE mode\footnote{M5thread has not been tested due the lack of scheduler and the miss of important syscall implementations in SE mode.}, parallel codelets cannot be realistically replayed on SE mode.
+
+\paragraph{}
+Using the region \_\_cere\_\_is\_ranked\_475 with five meta-repetitions (six total runs of the loop, as one is used to warm the cache up), we observed 4x speedup, comparing to running the full benchmark\footnote{IS class W was used for all the results.}. All the data analysis is done on the median of these five meta-repetitions, but as the fluctuation is at most 0,03\% (figure \ref{vari_se})\footnote{This is due to the deterministic routine of the codelet, as the region \_\_cere\_\_is\_ranked\_475 is verifying that a give array is well-sorted. Such tight results are harder to get on randomised or multithreaded code, see section \ref{FS_mode}.}, we can imagine running a codelet with only two or three meta-repetitions without significant biais.
+
+%here for layout reasons
+
+\end{multicols}
+\begin{figure}[ht]
+\begin{center}
+
+\begin{tabular}{| l | c | c | c | c | c | c |}
+\hline 
+& & & \multicolumn{2}{c|}{L2} &\\
+Name & Frequency\footnote{Non-turbo - Turbo when turbo techology is implemented} & L1D and L1I associativity\footnote{The L1D and L1I size is always 32 kB.} & Size & Assoc. & L3 \\
+\hline
+Cortex-A7 & 1,4 GHz & 4 & 512 kB & 8 & No \\
+Cortex-A15 & 1 GHz & 2 & 1 MB & 16 & No \\
+x5-Z8300 & 1,44-1,84 GHz & 4 & 1 MB & 16 & No \\
+i5-3550 & 3,3-3,7 GHz & 8 & $4 \times 256$ kB & 8 & Yes\footnote{The size of the l3 cache is set to 8MB and its associativity to 16-way due to gem5 limitation, it should be 6MB and 12-way.}\\
+\hline
+
+\end{tabular}
+\caption{\label{cpu_setup}Parameters used for CPU simulations.}
+\end{center}
+\end{figure}
+\begin{multicols}{2}
+
+
+\subsubsection{Fullsystem mode}
+\label{FS_mode}
+To run codelets in FS mode, only a few changes have been done: a more recent image than the ubuntu 7.04 available on gem5 site has been used, base on ubuntu-core 14.04. The kernel used is version 3.2.40 with default gem5 configuration\footnote{except the maximal number of cores set to 4.}.
+
+
+To run OpenMP applications, just putting the \textit{libiomp5.so} and \textit{libomp.so} in \textit{/usr/lib}\footnote{Taken from linux mint MATE 17.3 64 bits} works, excepting KMP\_affinity which could not have been set to scatter to stabilize results. As a consequence, codelets on small inputs shows inexploitable comportements (figure \ref{freqmine_nogood}).
+
+\subsection{Simulation models}
+\subsubsection{Hardware configuration}
+The chosen configurations are detailed in figure \ref{cpu_setup}. All systems are set with 8 GB of 1600 MHz DDR3, the cacheline size is always kept at 64 B, and all CPUs are quad-core without hyperthreading.
+
+\subsubsection{Chosen codelets}
+We chose three codelets to efficiently reproduce different usages:
+\begin{itemize}
+\item NAS IS sequential: region \_\_cere\_\_is\_ranked\_475 which check whether the calculated array is sorted or not.
+\item PARSEC\footnote{Version 3.0-beta-20150206} blackscholes: region \\ \_\_cere\_\_blackscholes\_m4\_\_Z9bs\_threadPv\_first, an OpenMP region calculating the option value based on the Black \& Scholes's equation.
+\item PARSEC freqmine: region\\ \_\_cere\_\_tree8scan1\_DBEP4Data\_first which generate a hash from tree the dataset.
+\item PARSEC x264: region \\ \_\_cere\_\_encoder\_analyse\_block\_residual\_write-\\ \_cabac\_745 used in the CABAC encoding of the video.
+\end{itemize}
+
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{nogood.eps}
+\captionof{figure}{\label{freqmine_nogood}Variations of the codelet loop execution time on PARSEC Freqmine benchmark using the Cortex-A15 configuration with AtomicSimpleCPU and simtest input.}
+\end{Figure}
+
+\section{Results}
+\subsection{Advantages}
+The use of codelets gives a powerfull utility to fine-tune the architecture fitting to the codelets. Because of CERE limitations, only codelets replay \textit{for} loops or \textit{omp parallel for} loops are supported, but this is much lighter than running the full application. Moreover, codelets can improve individually each region of an application, which is extremely usefull to choose on which CPU cluster run the application on a big.LITTLE system, or even in an heterogeneus compute server.
+
+The gem5 simulator is a precise tool to reproduce the comportement of a specific machine on a general computer. As the simulation is quite slow, the use of codelets could be really usefull in term of time and ressources in the conception of heterogeneus servers. As CERE operates as an IR-level, the operation does not need any additionnal work on the source code, and can be run in C, C++ or Fortran programs. Besides, the compilation of the codelets uses the power of the host machine and not the simulated one, which is really usefull in term of compute time: the emulated system is used only when it is truely needed.
+
+\subsection{Inconvenient : Unknown precision}
+Gem5 is a simulator, and therefore cannot be entirely trusted. CERE too cannot exactly replay a whole execution of ann application ; and the measures output by MCPAT are only an estimation of the effective power consumption of the CPUs: that's why the results could not fit exactly to the real-life experiments. Nevertheless, these simulations are bound to give an overview of the gains that could be archived by improving a specific part of a CPU, not to give absolute results.
+
+\label{results}
+
+\section{Conclusion}
+\label{ccl}
+
+\newpage
+
+\bibliographystyle{plain}
+\bibliography{report}
+
+
+\newpage
+\section{Annexe}
+\subsection{ARM Simulation}
+%codelets on ARM, place of the stack in memory, multicore support, no CERE on ARM for openMP apps
+
+\end{multicols}
+
+\end{document}

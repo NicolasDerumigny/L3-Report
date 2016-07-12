@@ -1,0 +1,430 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{listings}
+
+\lstset{literate=
+  {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+  {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+  {à}{{\`a}}1 {è}{{\`e}}1 {ì}{{\`i}}1 {ò}{{\`o}}1 {ù}{{\`u}}1
+  {À}{{\`A}}1 {È}{{\'E}}1 {Ì}{{\`I}}1 {Ò}{{\`O}}1 {Ù}{{\`U}}1
+  {ä}{{\"a}}1 {ë}{{\"e}}1 {ï}{{\"i}}1 {ö}{{\"o}}1 {ü}{{\"u}}1
+  {Ä}{{\"A}}1 {Ë}{{\"E}}1 {Ï}{{\"I}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1
+  {â}{{\^a}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1
+  {Â}{{\^A}}1 {Ê}{{\^E}}1 {Î}{{\^I}}1 {Ô}{{\^O}}1 {Û}{{\^U}}1
+  {œ}{{\oe}}1 {Œ}{{\OE}}1 {æ}{{\ae}}1 {Æ}{{\AE}}1 {ß}{{\ss}}1
+  {ű}{{\H{u}}}1 {Ű}{{\H{U}}}1 {ő}{{\H{o}}}1 {Ő}{{\H{O}}}1
+  {ç}{{\c c}}1 {Ç}{{\c C}}1 {ø}{{\o}}1 {å}{{\r a}}1 {Å}{{\r A}}1
+  {€}{{\EUR}}1 {£}{{\pounds}}1
+}
+
+\setlength{\hoffset}{-18pt}         
+\setlength{\oddsidemargin}{15pt} % Marge gauche sur pages impaires
+\setlength{\evensidemargin}{15pt} % Marge gauche sur pages paires
+\setlength{\marginparwidth}{0pt} % Largeur de note dans la marge
+\setlength{\textwidth}{481pt} % Largeur de la zone de texte 
+\setlength{\marginparsep}{7pt} % Séparation de la marge
+\setlength{\topmargin}{0pt} % Pas de marge en haut
+\setlength{\headheight}{13pt} % Haut de page
+\setlength{\headsep}{10pt} % Entre le haut de page et le texte
+\setlength{\footskip}{50pt} % Bas de page + séparation
+\setlength{\textheight}{600pt} % Hauteur de la zone de texte 
+
+\title{Log Book}
+\author{Nicolas Derumigny}
+\begin{document}
+
+\maketitle
+
+\section*{Day-to-day report}
+
+\paragraph*{May the 30th : First contact}
+Instalation of CERE, first meeting with the team, installation in the room.
+
+\paragraph*{May the 31st : Setup of gem5}
+Gem5 can works on two modes : \textit{syscall emulation} (SE) and \textit{full system} (FS). SE only supports static binaries and is quite fast and easy to use, whereas FS is slow (need to use \textit{telnet} / many seconds to execute \textit{ls} apparently), and needs a linux kernel and a base filesystem (.img). FS is more powerfull (dynamic executable can be run). As the binary provided by the direct compilation of IS benchmark is dynamic, I assume that FS might be needed for the rest of the work. 
+
+\paragraph*{June the 2nd : First tests}
+\begin{itemize}
+\item I stay with SE mode and compile whith -static
+\item first script, tested on full NAS IS, testing l1i and l1d cache size using simpleCPU, default memory controller and default l2 cache size, cpu clock speed at 3Ghz
+\end{itemize}
+CERE can't work when compiling whith -static, as malloc is redefine ($\leftarrow$ work to do on this side), normally solved later.
+The first script check the influence of the size of l1d \& l1i and l2 cache.
+For now, l1d and l1i has no influence on full NAS IS (maybe missconfiguration ?)
+
+\paragraph*{June the 3rd : Codelets and scripts}
+Scripts to test memory types and number of core (useless on NAS IS sequential..). Formating gnuplot output. First run variating RAM type on NAS IS, and variating caches too. First try on coldelet compile successfully with -static (address set to 0x2 for CERE stuff, but SE mode warning on rt\_sigaction, alarm and openat, ignoring them and setting openat to the same action as open result in a replay error : the executable could not read dump.
+
+\paragraph*{June the 6th : Meeting with Pablo and compatibility Gem5/CERE}
+Decomenting primary support of openat function on gem5. Pre-implementing getdents function on Gem5. Meeting and report to Pablo. New objective : compare to the build-in measurement system of Gem5.
+
+\paragraph*{June the 7th : bug solved of Gem5 + compiling librdtsc for Gem5 measuring}
+Found why gem5 did a page fault when executing coldelet : when no byte is read, the memory is still copied (and here, to an invalid pointer).
+Compiling librdtsc to use the internal Gem5 measurement system for each running of the codelet. Need to adapt the script to cpy the differents outputs (-> how are they formated ?).
+Need to add a proper way to give a Gem5 output codelet (maybe adding simply a -Gem5 flag ?)
+
+\paragraph*{June the 8th : Adapting scripts to run with cere + m5 wrapper}
+Found that the scripts loaded .cere dumps from Work/ directory : adapting to test if a .cere directory exists in the folder of the binary, if yes, it copies it to the current script dir qnd then delete it. Updating script to take the median of data. and to split stat.txt into different files.
+First significative bench (on memtype, median on 5 cere exec) (we observe the cache warmup phenomene : first iteration is slower than the others).
+First debug on cache script.
+First try on blackscole -> issue when linking omp in -static -> first test to compile static lib
+
+\paragraph*{June the 9th : omp statically compiled + first try of blackschole}
+Sucessfully built libiomp5.a, but it needs -ldl at link. 
+First try to compile blackschole, codelets works with default wrapped when modding gem5 lel file in order to compile statically (-ldl at the end of ld command). 
+First test of replay in gem5 -> syscall implementation has to be done (pthread)
+
+\paragraph{June the 10th : ARM compilation + first FS}
+Compilation of codelet -> FS mode is needed
+Call with Pablo : check FS mode, try to simulate Juno (big vs Little) + readme on the libiomp5.a build (done)
+succeed in testing ARM compilation for full IS -static
+First FS boot, works !
+Found MinorCPU, 4-satge pipeline for ARM use
+Try to enlarge disk image (x86 test only)
+successfully run part of IS non-codelet benchmark
+script to mount / run fs bench
+successfully capture to avoid booting each time
+
+\paragraph*{June the 13th : FS mode \& PARSEC}
+Enlarging x86 disk.
+CERE can't capture (for now) multi-threaded memory state -> capture with one and replay with many (environement variable).
+First compilation of PARSEC bench
+First boot in fs on ARM system -> 64bit kernel panic : no job fpr cpu (?)
+
+\paragraph*{June the 14th : Compilation of linux kernel for aarch64}
+kernel compiled for aarch64
+found references to emulate Juno CPU
+Checkpoint cannot work for restoring FS mode if the img has been modified, probably because of :
+\begin{lstlisting}
+Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes)
+Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes)
+\end{lstlisting}
+test of parsec :
+\begin{itemize}
+\item bodytrack : failed (fleximage is missing, even with sudo make install in the flexlib folder befor)
+\item facesim : libPhysBAM.a is missing (tried to follow the readme, but "no rules to make target")
+\item ferret : "gsl\_rng.h" is missing
+\item fluidanimate : search for makefile. (not OMP, not intresting ?) -> compile with "serial" chosen : linker fail (GLIBC incompatible ?)
+\item frequmine : compile, CERE can't profile nor replay (empty graph / no regions)
+\end{itemize}
+
+\paragraph*{June the 15th : more PARSEC bench trys}
+\begin{itemize}
+\item raytrace : need an environement variable (PARSECDIR)
+\item swaption : compile, but only TBB or pthread -> cere can't cope with that
+\item vips : does install, but is a lib ? how use CERE ?
+\item x264 : same as above : what is the command to launch ? Moreover, can't install
+\end{itemize}
+Focus on freqmine and bodytrack, as both are openMP.
+Freqmine : found 7 regions possible, focusing on one (\_\_cere\_\_fp\_tree\_\_ZN7FP\_tree8scan2\_DBEi\_first), $38\%$ of the parallel execution time. The execution time seems to variate really much. Create codelet, but segfault when there is more than one thread.
+Sequential codelet capture do not succeed (blank debug graph, cannot capture)
+
+\paragraph{June the 16th : GLIB missing and desillutions}
+Changes made in FS mode don't affect the .img
+Had to reinstall glib du to miscompilation -> maybe reinstall linux
+Virtualbox cannot emulate 64bit linux
+KVM does not work in this machine
+
+\paragraph{June the 17th : Explanation, thesis and reinstall}
+CERE 0.2 cannot capture memory changes based on the OMP\_NUMBER\_OF\_THREAD when they are done in sequential part of the code, that is why it cannot replay freqmine.
+Assist a thesis presentation on a collaborative platform for compilation feedback and neuronal network for compilation option optimisation (thanks Pablo !)
+Reinstalling linux to get all working.
+
+\paragraph{June the 20th : Meeting, full system image and freqmine}
+Meeting with Pablo
+Caputre of some codelets on freqmine -> issues on number of threads, and IO instructions: measuring are not significant beacause test case is too small.
+Build another image for FS, base on ubuntu 15.04, but kernel is missing.
+
+\paragraph{June the 21st : x264 codelet and update VM}
+x264 codelet can be compile OOB with clang
+update VM for FS to ubuntu 14.04 but kernel 3.2.40 : can boot !
+
+\paragraph{June the 22nd : More fullsystem and codelets}
+Sucessfully booted with old linux but 3.2.40 kernel, but the libc is too old to run the codelet.
+x264 : input file too short to profile -> that's why the gperf graph is empty
+Successfully booted on 14.04 with 3.2.40 kernel, but only one core is active.
+Recompilation of the kernel with 4-cores support.
+Recompilation of gem5 to support MinorCPU in x86 mode :
+\begin{lstlisting}
+scons CPU_MODELS="AtomicSimpleCPU,MinorCPU,O3CPU,TimingSimpleCPU" 
+build/X86/gem5.opt -j5
+\end{lstlisting}
+Works !
+Booting multi-cpu environement with AtomicSimpleCPU Works !
+
+\paragraph{June the 23rd : More CPU, more codelets and beginning simulations}
+Modding the A15 and A7 CPU to match an other paper, adding i5-3550 and x5-Z8300 (could be turbo/non-turbo) to list of possibles CPUs.
+Codelet experiments : segfault for tree15FP\_growth (unknow cause)
+x264 : i/o in main region (encode) and -s in linkage -> no information on functions !
+switching CPU : works partially for O3, not for Minor
+
+\paragraph{June the 24th : FS tuning and gem5 dev}
+Experience on checkpoints and FS mode (changing CPU
+MinorCPU works multicore in FS in dev repository
+Compiling all the available codelets with gem5 wrapper
+Implementing L3 cache for i5-3550
+
+\paragraph{June the 27th : lib on FS and measures}
+Adding usefull libs in /usr/lib in FS, updated checkpoints.
+First tries with mcpat and compilation (error from gem5 to mcpat converter)
+First layout for the report + draft for abstract / Introduction / references
+
+\paragraph{June the 28th-29th : TERATEC conference}
+
+\paragraph{June the 30th : Report, MCPAT and measures}
+Adding figures in the report
+Measures with blackscholes
+Work on m5 to mcpat script -> many names are too old
+
+\paragraph{July the 1st: MCPAT fix and downgrade}
+--restore-with-cpu gives only thhe CPU used to take the checkpoint !! -> all measures are with the AtomicSimple ?!?
+MCPAT script now works
+Downgrade to an older version of gem5 to avoid hanging bug in x86
+L3 seems to work
+
+\paragraph{July the 4th: cross-compilation and report (and gem5)}
+First implementation of L3 cache in gem5 beta mode (not working, might not be usefull).
+Compiled libgperf and libiomp5 for aarch64.
+Modding CERE to allow cross-compile mode for aarch64 (lel.py : objdump replaced + files for realmain and objs.o + libcere compiled \textit{mano} and put in /usr/lib/gcc-cross/4.8/).
+First trys of compilation on blackscholes.
+
+\paragraph{July the 5th : juno and ARM}
+Compiling librdtsc for aarch64
+Compiling codelets for aarch64
+Compiling gem5 for x86-MESI and arm with fullsystem=1.
+Measures of codelets with O3CPU, timing simple issue with multiple OMP threads
+Access to the Juno but "killed" on each codelet (but not on the original app)
+
+\paragraph{July the 6th : gem5 ARM}
+Compiled kernel for gem5 ARM
+Tried MESI x86 multicore
+Gem5 boot in FS mode in ARM with O3 and Minor
+Fixed a bug in gem5 to MCPAT script
+MCPAT: the issue seems to come from
+\begin{lstlisting}
+<component id="system.core0.predictor" name="PBT"> 
+	<param name="local_predictor_size" value="0,2"/>
+\end{lstlisting}
+The "0" is invalid.
+And the output value is unbelivable
+
+\paragraph{July the 7th : MCPAT}
+MCPAT Works
+Script to automate calculation of power
+Script gem5 to MC corrected and improoved
+
+\paragraph{July the 8th : More XP + final organisation}
+Wrote READMEs
+Two more CPUs : an i5 low-power and a Core 2 quad
+Ran the simulations
+MCPAT corrections
+SSH config for distant work
+
+
+\section*{Annexe}
+
+\subsection{CERE error when compiling with -static :}
+\begin{lstlisting}
+INFO 06/06/2016 13:55:59 CERE : Start
+INFO 06/06/2016 13:55:59 Replay : Compiling replay mode for region
+ __cere__is_rank_475 invocation 9 with instrumentation
+ERROR 06/06/2016 13:56:01 Replay : Command 'make clean && 
+make CLASS=W CERE_REPLAY_REPETITIONS=5 CERE_MODE="replay 
+--region=__cere__is_rank_475 --invocation=9 --instrument 
+--wrapper=-lcere_rdtsc"' returned non-zero exit status 2
+ERROR 06/06/2016 13:56:01 Replay : rm -f *.o *~ mputil*
+rm -f npbparams.h core
+make[1]: Entering directory 
+'/home/nderumigny/Documents/CERE/cere/examples/NPB3.0-SER/sys'
+make[1]: Nothing to be done for 'all'.
+make[1]: Leaving directory 
+'/home/nderumigny/Documents/CERE/cere/examples/NPB3.0-SER/sys'
+../sys/setparams is W
+cerec  -c  -O3 is.c
+is.c:640:1: warning: type specifier missing, defaults to 
+'int' [-Wimplicit-int]
+main( argc, argv )
+^~~~
+1 warning generated.
+Compiling replay mode
+Instrumentation mode
+cerec -O3 -o ../bin/is.W is.o ../common/c_print_results.o 
+../common/c_timers.o ../common/c_wtime.o 
+/usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(findlocale.o): dans la fonction " _nl_find_locale ":
+(.text+0x242): relocalisation tronquée pour concorder: 
+R_X86_64_32S vers le symbole _nl_locale_file_list défini sans 
+la section COMMON dans /usr/lib/gcc/x86_64-linux-gnu/
+4.9/../../../x86_64-linux-gnu/libc.a(findlocale.o)
+/usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(findlocale.o): dans la fonction " _nl_remove_locale ":
+(.text+0x543): relocalisation tronquée pour concorder: R_X86_64_32S 
+vers le symbole _nl_locale_file_list défini sans la section COMMON 
+dans /usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(findlocale.o)
+/usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(libc-tls.o): dans la fonction " __libc_setup_tls ":
+(.text+0x120): relocalisation tronquée pour concorder: R_X86_64_32S 
+vers le symbole _dl_static_dtv défini sans la section COMMON dans /
+usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(libc-tls.o)
+/usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(setlocale.o): dans la fonction " free_category ":
+(__libc_freeres_fn+0x11): relocalisation tronquée pour concorder: 
+R_X86_64_32S vers le symbole _nl_locale_file_list défini sans la 
+section COMMON dans /usr/lib/gcc/x86_64-linux-gnu/4.9/../../../
+x86_64-linux-gnu/libc.a(findlocale.o)
+/usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(tzset.o): dans la fonction " __tz_convert ":
+(.text+0xeec): relocalisation tronquée pour concorder: R_X86_64_32S 
+vers le symbole _tmbuf défini sans la section COMMON dans /usr/lib/
+gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(localtime.o)
+/usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(dl-tls.o): dans la fonction " _dl_deallocate_tls ":
+(.text+0x519): relocalisation tronquée pour concorder: R_X86_64_32S 
+vers le symbole _dl_static_dtv défini sans la section COMMON dans /
+usr/lib/gcc/x86_64-linux-gnu/4.9/../../../x86_64-linux-gnu/
+libc.a(libc-tls.o)
+clang: error: linker command failed with exit code 1 (use -v to see 
+invocation)
+[(0, 64), (65, 65), (66, 1090), (1091, 1091), (1092, 1092), (1093, 
+1093), (1094, 1094), (1095, 1095), (1096, 1096), (1097, 1097), 
+(1098, 1099)]
+Error lel : safe_system -> /usr/local/bin/clang @/tmp/tmpogjfbM
+Makefile:16: recipe for target '../bin/is.W' failed
+make: *** [../bin/is.W] Error 1
+
+ERROR 06/06/2016 13:56:01 Replay : Compiling replay mode for region 
+__cere__is_rank_475 invocation 9 Failed
+INFO 06/06/2016 13:56:01 CERE : Stop
+\end{lstlisting}
+
+
+\subsection{Kernel Panic when booting Ubuntu/Linaro 4.8.2-16ubuntu4 with O3CPU}
+\begin{lstlisting}
+Starting init: /sbin/init exists but couldn't execute it (error -8)
+Starting init: /etc/init exists but couldn't execute it (error -13)
+request_module: runaway loop modprobe binfmt-464c
+Starting init: /bin/sh exists but couldn't execute it (error -8)
+Kernel panic - not syncing: No working init found.  Try passing
+init= option to kernel. See Linux Documentation/init.txt
+for guidance.
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc2 #1
+[<80016954>] (unwind_backtrace+0x0/0xf4) from [<80012424>]
+(show_stack+0x10/0x14)
+[<80012424>] (show_stack+0x10/0x14) from [<804f9bd4>]
+(dump_stack+0x98/0xc4)
+[<804f9bd4>] (dump_stack+0x98/0xc4) from [<804f6db4>]
+(panic+0xa0/0x1e4)
+[<804f6db4>] (panic+0xa0/0x1e4) from [<804f4408>] (cpu_die+0x0/0x70)
+[<804f4408>] (cpu_die+0x0/0x70) from [<00000000>] (  (null))
+CPU2: stopping
+CPU: 2 PID: 0 Comm: swapper/2 Not tainted 3.13.0-rc2 #1
+[<80016954>] (unwind_backtrace+0x0/0xf4) from [<80012424>]
+(show_stack+0x10/0x14)
+[<80012424>] (show_stack+0x10/0x14) from [<804f9bd4>
+(dump_stack+0x98/0xc4)
+[<804f9bd4>] (dump_stack+0x98/0xc4) from [<80014e20>]
+(handle_IPI+0x1b0/0x1c4)
+[<80014e20>] (handle_IPI+0x1b0/0x1c4) from [<800085b8>]
+(gic_handle_irq+0x58/0x5c)
+[<800085b8>] (gic_handle_irq+0x58/0x5c) from [<80012f80>]
+(__irq_svc+0x40/0x70)
+Exception stack(0xbf885f80 to 0xbf885fc8)
+5f80: 80fa9608 00000000 00000151 00000000 00000000
+00000000 806f1608 008b8000
+5fa0: 60000113 80fa9608 807304fb 00000000 00000000
+bf885fc8 800695a0 800695a4
+5fc0: 60000113 ffffffff
+[<80012f80>] (__irq_svc+0x40/0x70) from [<800695a4>]
+(rcu_idle_exit+0x58/0xa0)
+[<800695a4>] (rcu_idle_exit+0x58/0xa0) from [<8006024c>]
+(cpu_startup_entry+0xdc/0x240)
+[<8006024c>] (cpu_startup_entry+0xdc/0x240) from [<80008644>]
+(__enable_mmu+0x0/0x1c)
+CPU1: stopping
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-rc2 #1
+[<80016954>] (unwind_backtrace+0x0/0xf4) from [<80012424>] 
+(show_stack+0x10/0x14)
+[<80012424>] (show_stack+0x10/0x14) from [<804f9bd4>] (dump_stack
++0x98/0xc4)
+[<804f9bd4>] (dump_stack+0x98/0xc4) from [<80014e20>] (handle_IPI
++0x1b0/0x1c4)
+[<80014e20>] (handle_IPI+0x1b0/0x1c4) from [<800085b8>] 
+(gic_handle_irq+0x58/0x5c)
+[<800085b8>] (gic_handle_irq+0x58/0x5c) from [<80012f80>] (__irq_svc
++0x40/0x70)
+Exception stack(0xbf883f80 to 0xbf883fc8)
+3f80: 80fa1608 00000000 00000787 00000000 00000000 00000000
+806f1608 008b0000
+3fa0: 60000113 80fa1608 807304fb 00000000 00000000 bf883fc8
+800695a0 800695a4
+3fc0: 60000113 ffffffff
+[<80012f80>] (__irq_svc+0x40/0x70) from [<800695a4>]
+(rcu_idle_exit+0x58/0xa0)
+[<800695a4>] (rcu_idle_exit+0x58/0xa0) from [<8006024c>] 
+(cpu_startup_entry+0xdc/0x240)
+[<8006024c>] (cpu_startup_entry+0xdc/0x240) from [<80008644>] 
+(__enable_mmu+0x0/0x1c)
+CPU3: stopping
+CPU: 3 PID: 0 Comm: swapper/3 Not tainted 3.13.0-rc2 #1
+[<80016954>] (unwind_backtrace+0x0/0xf4) from [<80012424>] 
+(show_stack+0x10/0x14)
+[<80012424>] (show_stack+0x10/0x14) from [<804f9bd4>]
+(dump_stack+0x98/0xc4)
+[<804f9bd4>] (dump_stack+0x98/0xc4) from [<80014e20>]
+(handle_IPI+0x1b0/0x1c4)
+[<80014e20>] (handle_IPI+0x1b0/0x1c4) from [<800085b8>] 
+(gic_handle_irq+0x58/0x5c)
+[<800085b8>] (gic_handle_irq+0x58/0x5c) from [<80012f80>]
+(__irq_svc+0x40/0x70)
+Exception stack(0xbf887f80 to 0xbf887fc8)
+7f80: 80fb1608 00000000 000001d9 00000000 00000000
+00000000 806f1608 008c0000
+7fa0: 60000113 80fb1608 807304fb 00000000 00000000
+bf887fc8 800695a0 800695a4
+7fc0: 60000113 ffffffff
+[<80012f80>] (__irq_svc+0x40/0x70) from [<800695a4>]
+(rcu_idle_exit+0x58/0xa0)
+[<800695a4>] (rcu_idle_exit+0x58/0xa0) from [<8006024c>] 
+(cpu_startup_entry+0xdc/0x240)
+[<8006024c>] (cpu_startup_entry+0xdc/0x240) from [<80008644>] 
+(__enable_mmu+0x0/0x1c)
+\end{lstlisting}
+
+\subsection{Error when booting personnal kernel build}
+\begin{lstlisting}
+[   62.000487] ata1: lost interrupt (Status 0x50)
+[   62.000498] ata1.00: limiting speed to UDMA/25:PIO4
+[   62.000508] ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 
+action 0x6 frozen
+[   62.000522] ata1.00: failed command: READ DMA
+[   62.000531] ata1.00: cmd c8/00:08:00:00:00/00:00:00:00:00/e0 
+tag 0 dma 4096 in
+[   62.000531]          res 40/00:00:00:00:00/00:00:00:00:00/00
+ Emask 0x4 (timeout)
+[   62.000557] ata1.00: status: { DRDY }
+[   62.000567] ata1: soft resetting link
+[   62.160522] ata1.00: configured for UDMA/25
+[   62.160531] ata1.00: device reported invalid CHS sector 0
+[   62.160543] ata1: EH complete
+\end{lstlisting}
+
+\subsection{Init with old image}
+\begin{lstlisting}
+INIT: version 2.86 booting
+mounting filesystems...
+loading script...
+Script from M5 readfile is empty, starting bash shell...
+(none) / # cd home/
+\end{lstlisting}
+
+\subsection{Error when using "scatter" affinity}
+\begin{lstlisting}
+OMP: Warning #121: Error initializing affinity - not using affinity.
+\end{lstlisting}
+
+
+\end{document}
