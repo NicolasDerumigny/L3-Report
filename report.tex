@@ -10,7 +10,7 @@
 \makesavenoteenv{tabular}
 \makesavenoteenv{figure}
 \newenvironment{Figure}
-  {\par\medskip\noindent\minipage{\linewidth}}
+  {\par\medskip\noindent\center\minipage{0.9\linewidth}}
   {\endminipage\par\bigskip\medskip}
   %figure inside multicols
 
@@ -18,7 +18,7 @@
 % Marge gauche sur pages impaires
 \setlength{\evensidemargin}{0pt}
 % Marge gauche sur pages paires
-\setlength{\textwidth}{480pt}
+\setlength{\textwidth}{470pt}
 % Largeur de la zone de texte 
 \setlength{\topmargin}{0pt}
 % Pas de marge en haut
@@ -28,7 +28,7 @@
 % Entre le haut de page et le texte
 \setlength{\footskip}{40pt}
 % Bas de page + séparation
-\setlength{\textheight}{633pt}
+\setlength{\textheight}{630pt}
 % Hauteur de la zone de texte 
 
 
@@ -73,7 +73,6 @@ One other illustration of this material-to-software adaptation is the boost tech
 
 \paragraph{}
 The gem5 simulator\cite{gem5-sim} has been used to quantify micro-architecture impacts on softwares: it allows to fine-tune parameters without using different processors. As it emulates a whole linux system, the measurement could be really slow, that is why running only codelets gives a serious advantage comparing to measure the entire application. Comparing to running the IS full application in SE mode, running the IS codelet is four times faster.
-% GIVE A SPEEDUP !
 
 Four x86 CPUs were simulated, one based on the Cortex A-15\cite{DBLP:conf/samos/EndoCC14}, the i5-3550 (with turbo and non-turbo frequency), the i5-3770U, a low-power mobile CPU and a QX9100. All these CPUs are simulated as one-core CPU, using the one-core values for non-shared caches and real value for shared caches.
 
@@ -195,7 +194,7 @@ We chose three codelets to efficiently reproduce different usages:
 \item NAS IS sequential: region \_\_cere\_\_is\_ranked\_475 which check whether the calculated array is sorted or not.
 \item PARSEC\footnote{Version 3.0-beta-20150206} blackscholes: region \\ \_\_cere\_\_blackscholes\_m4\_\_Z9bs\_threadPv\_first, an OpenMP region calculating the option value based on the Black \& Scholes's equation.
 \item PARSEC freqmine: region\\ \_\_cere\_\_tree8scan1\_DBEP4Data\_first which generate a hash from tree the dataset.
-\item PARSEC x264: region \\ \_\_cere\_\_encoder\_analyse\_block\_residual\_write-\\ \_cabac\_745 used in the CABAC encoding of the video.
+\item PARSEC x264: region \\ \_\_cere\_\_encoder\_analyse\_block\_residual\_write- \_cabac\_745 used in the CABAC encoding of the video.
 \end{itemize}
 
 
@@ -207,9 +206,10 @@ We chose three codelets to efficiently reproduce different usages:
 
 \section{Results}
 \label{results}
+The power consumption of each CPU is calculated roughly using gem5 output file: such value should not be taken absolutly but relatively to other CPU simulated. One have to keep in ,ind that the CPUs use only using a generic x86 scheme, without hyper-threading or other technological improvements (pipeline aside), and own only one core. That is why only relative measured at fixed codelets are really meaningfull.
 
-\subsection{Power/performance ratio}
-The performance of a CPU is measured by the execution time of the selected codelet. To keep an higher-is-better indice, the y axis corresponds to $1/t_e$ where $t_e$ is the execution time.
+\subsection{Power/performance ratio and index}
+The performance of a CPU is measured by the execution time of the selected codelet. To keep an higher-is-better index, only $1/t_e$ values are used (where $t_e$ is the execution time).
 The power-comsumpution ration is defined as 
 \begin{equation}
 \frac{1}{P.t_e}
@@ -218,17 +218,93 @@ With $P$ the power consumption of the CPU on the benchmark.
 
 A higher ratio means either better performance or less comsumption, and so a better choice.
 
+\newpage
 
-\subsubsection{Serial applications}
-\paragraph{IS}
-\paragraph{x264}
+\subsection{Performance}
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{Performance.eps}
+\captionof{figure}{\label{Perf}Performance of all tested CPUs on differents codelets.}
+\end{Figure}
+
+
+X264 codelet is too fast too measure the execution time with gem5 (only 0,0000001 or 0,0000002 seconds are calculated), so this codelet will only be analyse for its power consumption.
+
+
+IS and freqmine does execute on the same order of time (figure \ref{Perf}), even if freqmine codelet was extracted running the simtest input. 
+
+
+
+\subsection{Power consumption}
+When the power consumption is on the $x$ axis, the former is graduated backward to keep and higher-is-better index.
+
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{Power_consumption.eps}
+\captionof{figure}{\label{Pow}Performance-Power consumption ratio for each CPU.}
+\end{Figure}
+
+For example, the blackscholes codelets seems to consume more power than all the other codelets (figure \ref{Pow}). This is due to floating point operations, used significantly only in this codelet (see \ref{Blackscholes}).
+
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{Ratio.eps}
+\captionof{figure}{\label{Ratio}Performance-Power consumotion ration for each codelets.}
+\end{Figure}
+
+
+\subsubsection{IS : A serial applications}
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{IS.eps}
+\captionof{figure}{\label{IS}Power-Performance graph for the IS codelet.}
+\end{Figure}
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{IS_instr.eps}
+\captionof{figure}{\label{IS_instr}Repartition of the instructions during the execution of the IS codelet.}
+\end{Figure}
+
+
+\paragraph{x264\\}
+?
+
 
 \subsubsection{Parallel applications}
 This parallel applications are run on a one-core configuration: these results are only bound to show the single-core performance-consumption differences, and not the manycore scaling. Such studys could easily be measured on ARM systems (see \ref{ARM_sim}).
 
-\paragraph{Freqmine}
-\paragraph{Blackscholes}
+\paragraph{Freqmine\\}
 
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{Freqmine.eps}
+\captionof{figure}{\label{Freq}Power-Performance graph for the Freqmine codelet.}
+\end{Figure}
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{Freqmine_instr.eps}
+\captionof{figure}{\label{Freq_instr}Repartition of the instructions during the execution of the Freqmine codelet.}
+\end{Figure}
+
+
+\paragraph{Blackscholes\\}
+\label{Blackscholes}
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{Blackscholes.eps}
+\captionof{figure}{\label{Blasch}Power-Performance graph for the Blackscholes codelet.}
+\end{Figure}
+
+\begin{Figure}
+\centering
+\includegraphics[width=\linewidth]{Blackscholes_instr.eps}
+\captionof{figure}{\label{Blasch_instr}Repartition of the instructions during the execution of the Blackscholes codelet.}
+\end{Figure}
 
 \subsection{Advantages}
 The use of codelets gives a powerfull utility to fine-tune the architecture fitting to the codelets. Because of CERE limitations, only codelets replay \textit{for} loops or \textit{omp parallel for} loops are supported, but this is much lighter than running the full application. Moreover, codelets can improve individually each region of an application, which is extremely usefull to choose on which CPU cluster run the application on a big.LITTLE system, or even in an heterogeneus compute server.
@@ -276,6 +352,8 @@ NAS IS (codelet \_\_cere\_\_is\_ranked\_475) has been successfully replayed on a
 
 \subsection{About the UVSQ laboratory}
 %see the report instruction on the web
+
+\subsection{Gem5 bugs}
 
 \end{multicols}
 
