@@ -50,7 +50,7 @@
 In recent years, many efforts have been deployed in order to increase the speed and efficiency of computing architectures. Another step to increase their efficiency is to adapt the architectures to the programs they run, this idea is called \emph{codesign}. For example, neuronal networks do not require the full 64 precision bits of recent architectures, and can operate well with only 16 bits. Therefore specific hardware, faster for 16-bit calculus is being developed.
 
 
-Heterogeneous multicore system, widely spread on embedded computing, such as the ARM big.LITTLE technology use two different CPU: the big CPU handles heavy tasks, and the little one, more power-efficient but slower, is used the rest of the time. Sometimes the different regions of an application fit better on some architecture, depending of the type of data and the operations they are dealing with. On the big.LITTLE architecture, they can be dynamically migrated from one CPU to the other. 
+Heterogeneous multicore systems such as the ARM big.LITTLE technology, widely spread on embedded computing, use two different CPUs: the big CPU handles heavy tasks, and the little one, more power-efficient but slower, is used the rest of the time. Sometimes the different regions of an application fit better on some architecture, depending of the type of data and the operations they are dealing with. On the big.LITTLE architecture, they can be dynamically migrated from one CPU to the other. 
 
 The codelet approach, based on the use of the software Codelet Extractor and REplayer (CERE), allows to isolate and tune sections of the application individually, showing which improvements on the hardware side leads to better performance. 
 
@@ -87,7 +87,7 @@ Four x86 CPUs are considered, one based on the Cortex A-15\cite{DBLP:conf/samos/
 The codelets used were extracted using CERE\cite{CERE} from the NAS\cite{NAS} sequential benchmark suite and the PARSEC\cite{PARSEC} benchmark suite. We chose NAS IS sequential as a simple serial application sorting integers and pthread-disabled x264 for a more complicated one demonstating state-of-the-art video compression. Blackscholes and Freqmine, two OpenMP applications from PARSEC suite, were chosen to test multithread performance.
 
 
-The energy consumption was computed using McPAT\cite{McPAT} and taken as a measure of the efficiency of each simulated CPU. Indeed, power consumption is a crucial measurement for architecture tuning, as it limits on one side the maximum computational power of the CPU (because higher frequencies increse the power consumption) and on the other side the power cost to run it.
+The energy consumption was computed using McPAT\cite{McPAT} and taken as a measure of the efficiency of each simulated CPU. Indeed, power consumption is a crucial measurement for architecture tuning, as it limits on one side the maximum computational power of the CPU (because higher frequencies increase the power consumption) and on the other side the power cost to run it.
 
 Section \ref{bckgrnd} presents the related work and situates the paper contributions in the current research. Section \ref{sim} describes how codelets extracted by CERE were ported to be compatible with the gem5 simulator, along with the performance and energy models and the values and the applications chosen for the simulations. Section \ref{results} demonstrates how CERE coupled with gem5 can be used to quickly tune heterogeneus architecture for each codelet.
 
@@ -111,7 +111,7 @@ The loop run inside the application is called the \textit{in-vivo} codelet. CERE
 
 CERE extracts codelets from a C/C++/Fortran application using the LLVM compiler. It operates at the Itermediare Represemtation (IR) level, and thus is more flexible than source-code isolation (isolating the codelet at the source-code level, then recompiling it) or assembly isolation (isolating the codelet at the binary file level)\cite{CERE}. 
 
-At this time, CERE targets only loops and openMP parallel \textit{for} loops. On sequential NAS IS benchmark, the selected codelet covers more than 98\% of the total execution time, but is 7.3 to 46.6 times faster than running the full NAS.B suite.
+At this time, CERE targets only loops and openMP parallel \textit{for} loops.
 
 
 \end{multicols}
@@ -125,12 +125,16 @@ At this time, CERE targets only loops and openMP parallel \textit{for} loops. On
 \newpage
 
 \begin{multicols}{2}
+On sequential NAS IS benchmark, the selected codelet covers more than 98\% of the total execution time, but is 7.3 to 46.6 times faster than running the full NAS.B suite.
+
 
 
 CERE captures the memory context at a page-granularity level, which is lighter than a full dump and then faster to replace in memory when replaying inside a simulator. The memory capture allows to restore the codelet working set and cache-state before it is replayed. 
 
 
 % PABLO: je ne comprends pas cette phrase. Peux tu clarifier stp ?
+%NICOLAS: Simplement que les modefication micro-architectural peuvent augmenter le temps de chauffe de cache pour diminuer le temps d'execution des autres iterations de la boucle: pour nous, c'est donc d'autant plus improtant de ne pas mesurer cette etape.
+
 %This step should not be avoided when tuning microarchitecture parameters such as cache size or cache line size, as the warm-up could be slower but the other executions much faster.
 
 
@@ -162,7 +166,7 @@ On the contrary, the FullSystem (FS) mode emulates a full CPU; as the OS is emul
 \end{multicols}
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[width=0.9\linewidth]{McPAT_diag.eps}
+\includegraphics[width=0.85\linewidth]{McPAT_diag.eps}
 \caption{\label{McPAT_schema}Functional scheme of McPAT}
 \end{center}
 \end{figure}
@@ -176,9 +180,8 @@ Moreover, gem5 features a checkpoint functionality which avoids booting again wh
 
 \begin{Figure}
 \centering
-%%CHANGER LA LEGENDE "second"
 \includegraphics[width=\linewidth]{vari_se.eps}
-\captionof{figure}{\label{vari_se}Variations of the codelet loop execution time on NAS IS class W benchmark using the i5-3550 configuration without turbo, with four CPUs.}
+\captionof{figure}{\label{vari_se}Variations of the codelet loop execution time on NAS IS benchmark using a quad-core i5-3550 configuration.}
 \end{Figure}
 
 \subsubsection{Syscall emulation mode}
@@ -213,11 +216,11 @@ Name & Frequency\footnote{Non-turbo - Turbo frequency when turbo techology is im
 
 Cortex-A15 & 1 GHz & 2 & 1 MB & 16 & No \\
 
-i5-3550 & 3,3-3,7 GHz & 8 & $4 \times 256$ kB & 8 & Yes\footnote{The size of the L3 cache is set to 8MB and its associativity to 16-way due to gem5 limitations, it should be 6MB and 12-way.}\\
+i5-3550 & 3,3-3,7 GHz & 8 & 256 kB & 8 & Yes\footnote{The size of the L3 cache is set to 8MB and its associativity to 16-way due to gem5 limitations, it should be 6MB and 12-way.}\\
 
-i5-3337U & 1,8-2,7\footnote{Only the non-turbo frequency has been simulated} GHz & 8\footnote{It should be 6 MB.} & $4 \times 256$ kB & 16 & Yes\footnote{It should be 3 MB.}\\
+i5-3337U & 1,8-2,7\footnote{Only the non-turbo frequency has been simulated} GHz & 8\footnote{It should be 6 MB.} & 256 kB & 16 & Yes\footnote{It should be 3 MB.}\\
 
-Q9100 & 2,26 GHz & 8 & 8 MB\footnote{It should be 6 MB and 12-way.} & 16 & No\\
+Q9100 & 2,26 GHz & 8 & 8 MB\footnote{It should be $6$ MB and 12-way.} & 16 & No\\
 
 
 
@@ -270,12 +273,13 @@ The power consumption of each CPU is calculated roughly using gem5 output file b
 
 One have to keep in mind that the CPUs use only using a generic single-core x86 model, without hyper-threading or other recent technological improvements (pipeline aside). The absolute measures are therefore quite irrealistic. Nevertheless, the ratio between performance points provide interesting feedback to evaluate the fitness of a codelet to a given architecture.
 
-\newpage %avoid warning
 Unfortunately, X264 codelet execution is too fast to be measured with gem5 (only 0,0000001 or 0,0000002 seconds are calculated), so this codelet will only be analysed for its power consumption. 
 
 % PABLO: je pense que même les mesures energétiques doivent être faussées par le temps d'exécution très court...
 % Malheureusement en l'état les résultats x264 me semblent inexploitables. Mais ça arrive :-)
 
+
+% NICOLAS: Oui, j'hesite meme a le supprimer completement (partie chosen codelets et le graphe de power consumption, en tout cas il faudra le retirer pour le workshop)
 
 \subsection{Individual codelet results}
 
