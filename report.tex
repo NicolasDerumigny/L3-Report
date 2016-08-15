@@ -56,8 +56,7 @@ The codelet approach, based on the use of the software Codelet Extractor and REp
 
 
 This report studies the possibility of automatically adapting programs to heterogeneous micro-architectures. It considers programs written in the x86 instruction set and simulated by gem5. The fit of a code region to a particular CPU is measured through a performance-consumption ratio, calculated with McPAT.
-Experiments have been performed on both sequential and parallel applications on one simulated monocore CPU, using the NAS and PARSEC benchmark suites. 
-%comment result when they where
+Experiments have been performed on both sequential and parallel applications on one simulated monocore CPU, using the NAS and PARSEC benchmark suites.
 
 \end{abstract}
 
@@ -94,12 +93,6 @@ Section \ref{bckgrnd} presents the related work and situates the paper contribut
 
 \section{Background}
 \label{bckgrnd}
-
-
-%\subsection{On the benchmarking of processors}
-%TODO/DELETE : Moreover, benchmarks are a good way to reproduce the usage of a computer\cite{select-bench}. %read this
-
-
 
 \subsection{On the use of codelets}
 Previous studies~\cite{CERE} show that source code isolation is a reliable way to reproduce the behavior of applications. 
@@ -239,9 +232,7 @@ All the data analysis is done on the median of these five meta-repetitions, but 
 To run codelets in FS mode, only a few changes have been done: a manually prepared recent image based on Ubuntu-core 14.04 was used instead of the standard Ubuntu 7.04 image available on gem5 site. The kernel used is version 3.2.40 with default gem5 configuration.
 
 
-To run OpenMP applications, just putting the \textit{libiomp5.so} and \textit{libomp.so} in \textit{/usr/lib}\footnote{Taken from linux mint MATE 17.3 64 bits} works. Therefore setting KMP\_affinity to \textbf{scatter}, which should assign each thread to a different core if available, results in a segmentation fault when starting the codelet. As a consequence, codelets on small inputs shows inexploitable behaviour (figure \ref{freqmine_nogood}) on four cores.
-%CHANGE THE FIGUUURRRRRREEEE "seconds" sans "e" !!!
- Moreover, gem5 seems to hang when simulating more than one x86 CPU in FS mode, that is why all the applications (including multicore's one) were run using a one-core configuration.
+To run OpenMP applications, just putting the \textit{libiomp5.so} and \textit{libomp.so} in \textit{/usr/lib}\footnote{Taken from linux mint MATE 17.3 64 bits} works. Therefore setting KMP\_affinity to \textbf{scatter}, which should assign each thread to a different core if available, results in a segmentation fault when starting the codelet. As a consequence, codelets on small inputs shows inexploitable behaviour (figure \ref{freqmine_nogood}) on four cores.  Moreover, gem5 seems to hang when simulating more than one x86 CPU in FS mode, that is why all the applications (including multicore's one) were run using a one-core configuration.
 
 
 \subsubsection{Chosen codelets}
@@ -273,6 +264,7 @@ The power consumption of each CPU is calculated roughly using gem5 output file b
 
 One have to keep in mind that the CPUs use only using a generic single-core x86 model, without hyper-threading or other recent technological improvements (pipeline aside). The absolute measures are therefore quite irrealistic. Nevertheless, the ratio between performance points provide interesting feedback to evaluate the fitness of a codelet to a given architecture.
 
+\newpage %disable multicol warning
 Unfortunately, X264 codelet execution is too fast to be measured with gem5 (only 0,0000001 or 0,0000002 seconds are calculated), so this codelet will only be analysed for its power consumption. 
 
 % PABLO: je pense que même les mesures energétiques doivent être faussées par le temps d'exécution très court...
