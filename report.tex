@@ -5,6 +5,7 @@
  
 \usepackage{multicol,caption}
 %\usepackage{pgfplots}
+\usepackage{listings}
 \usepackage{graphicx}
 \usepackage{footnote}
 \makesavenoteenv{tabular}
@@ -178,8 +179,8 @@ Moreover, gem5 features a checkpoint functionality which avoids booting again wh
 \end{Figure}
 
 \subsubsection{Syscall emulation mode}
-Gem5 required two code patches before CERE sequential codelets could be run in SE mode. First, the \textit{getdents} syscall has been implemented, which is called inside the \textit{readdir} function, used in the codelet memory mapping function.
-The second change concern a bug occurring when reading EOF with the syscall \textit{read} while providing an invalid pointer: according to POSIX specifications it should work and write nothing, but caused a page fault in gem5. Both patches were submitted to the gem5 community.
+Gem5 required two code patches before CERE sequential codelets could be run in SE mode. First, the \textit{getdents} syscall has been implemented (cf \ref{bugfixes_getdents}), which is called inside the \textit{readdir} function, used in the codelet memory mapping function.
+The second change concern a bug occurring when reading EOF with the syscall \textit{read} while providing an invalid pointer (cf \ref{bugfixes_read}): according to POSIX specifications it should work and write nothing, but caused a page fault in gem5. Both patches were submitted to the gem5 community.
 
 
 In order to statically compile codelets with CERE\footnote{CERE version 0.2 was used in this paper.}, the argument \textit{-static} must be provided at the link time. Noting that this could provoked some relocation error when specifying the entry point of the program: offset 0x60000000 (used as default start point in CERE) is used to place the standard C library in sequential NAS IS. Experimentally, offset 0x40000000 did not cause any trouble when compiling sequential codelets. This issue has been fixed in the last version of CERE.
@@ -458,9 +459,56 @@ NAS IS (codelet \_\_cere\_\_is\_ranked\_475) has been successfully replayed on a
 \subsection{About the UVSQ laboratory}
 TODO
 
-\subsection{Gem5 patches}
-TODO
-
 \end{multicols}
+
+\subsection{Gem5 patches}
+\subsubsection{Getdents syscall:}
+\label{bugfixes_getdents}
+\begin{lstlisting}[language=c++]
+SyscallReturn
+getdentsFunc(SyscallDesc *desc, int num, LiveProcess *p, ThreadContext *tc)
+{
+    int index = 0;
+    int sim_fd = p->sim_fd(p->getSyscallArg(tc, index));
+    if (sim_fd < 0)
+        return -EBADF;
+    Addr buf_ptr = p->getSyscallArg(tc, index);
+    int nbytes = p->getSyscallArg(tc, index);
+    BufferArg buf_arg(buf_ptr, nbytes);
+
+    int nread = syscall(SYS_getdents, sim_fd, buf_arg.bufferPtr(), nbytes);
+    int errno_after_call=errno;
+
+    if (nread > 0)
+        buf_arg.copyOut(tc->getMemProxy());
+
+    return (nread == -1) ? -errno_after_call : nread;
+}
+\end{lstlisting}
+
+\subsubsection{Read syscall bugfixe:}
+\label{bugfixes_read}
+\begin{lstlisting}[language=c++]
+SyscallReturn
+readFunc(SyscallDesc *desc, int num, LiveProcess *p, ThreadContext *tc)
+{
+    int index = 0;
+    int tgt_fd = p->getSyscallArg(tc, index);
+    Addr bufPtr = p->getSyscallArg(tc, index);
+    int nbytes = p->getSyscallArg(tc, index);
+    BufferArg bufArg(bufPtr, nbytes);
+
+    int sim_fd = p->getSimFD(tgt_fd);
+    if (sim_fd < 0)
+        return -EBADF;
+
+    int bytes_read = read(sim_fd, bufArg.bufferPtr(), nbytes);
+
+    if (bytes_read != -1)
+        bufArg.copyOut(tc->getMemProxy());
+
+    return bytes_read;
+}
+\end{lstlisting}
 
 \end{document}
