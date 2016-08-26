@@ -424,15 +424,23 @@ The use of codelets is faster and nearly as efficient as regular benchmarks; and
 
 Our primary results validate the fact that ARM architecture consumes really less power than X86 standard one, unsurprisingly. But its power-performance ratio is up to 7 times better than a regular i5. On the hardware side, the cache size plays an important role in the performance, so one can imagine that some specific architecture could be developed, fitting the cache size (or type) to the data used for example.
 
-Even if only four CPUs are simulated, this results encourage to wisely choose the right architecture when selecting the hardware. A conjoint development of future architecture, based on their efficiency for a specific use only, would be a great step forward in the conception of new architectures and lead to lower power consumption. 
+In heterogeneous compute clusters, this method can be used to fine-tune the placement policy. Indeed, one can imagine a flexible machine composed by several compute units with various cache size, frequency, floating points and integer compute power. Simulating applications on these compute units individually can thus estimate which codelets fit better on which compute unit. During a real execution, the scheduler can based its decisions on these simulations to move on-the-fly an application to the compute unit which maximizing the performance-power ratio.
 
+
+Even if only four CPUs are simulated, this results encourage to wisely choose the right architecture when selecting the hardware. That is why a conjoint development of future architectures, based on their efficiency for a specific use only, would be a great step forward in the conception of new architectures and lead to lower power consumption. 
+
+
+\end{multicols}
 \newpage
+\begin{multicols}{2}
 
 \bibliographystyle{plain}
 \bibliography{report}
 
-
+\end{multicols}
 \newpage
+\begin{multicols}{2}
+
 \section{Annexe}
 \subsection{ARM Simulation}
 \label{ARM_sim}
@@ -457,9 +465,18 @@ NAS IS (codelet \_\_cere\_\_is\_ranked\_475) has been successfully replayed on a
 
 
 \subsection{About the UVSQ laboratory}
-TODO
+My internship took place at the University of Versailles Saint-Quentin, at Versailles, inside the Li-PaRAD laboratory, under the directory of Pablo de Oliveira Castro.
+
+My first weeks were mostly occupied by bibliography and primary setup of different tools, gem5 and CERE especially. I have spend most of my time adapting gem5 and modifying CERE to work with each other (including patches, improvements, bug reports, library adaptations and modifying a linux virtual drive image). The simulations were quite long (about one day to calculate all the results), and were repeated several time due to incorrect parameters. The conversion from gem5 output to McPAT input was done at the very end of my internship.
+
+I have worked mostly with Mihail Popov (Ph.D. student), Chadi Akel (Engineer), both involved in the development of CERE, and Yohan Chatelain, a M2 intern in charge of the RAM capture when replaying an OpenMP region. I have also been helped by Lavania Ramapantulu, an intern from Singapore, who worked as me on PARSEC benchmarks. At the end of my work, William Jalby came to me in order to see if all went right. Pablo was always there when I needed some precisions or to validate each step that I have presented to him.
+
+I spent two days during my internship at Polytechnique assisting to the Teratec forum. It was really interesting, as I could talk to other researchers and discover what they are working on.
+
+I liked the atmosphere, as I was really free in my research, but I could easily ask somebody when I encountered hardships. I particularly enjoyed having a clear line of work and nevertheless free in my timing schedule and my way to tackle this subject.
 
 \end{multicols}
+\newpage 
 
 \subsection{Gem5 patches}
 \subsubsection{Getdents syscall:}
