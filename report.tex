@@ -420,14 +420,14 @@ Moreover, the manufacturing costs has never been reckon with in this paper, wher
 \label{ccl}
 This paper presents a novel approach on a hardware-to-software adaptation using codelets to speed up gem5 simulations. 
 
-The use of codelets is faster and nearly as efficient as regular benchmarks; and the combine use of gem5 along with McPAT offers a powerful and flexible tool to simulate any architecture modification on compute units.
+The use of codelets is faster and nearly as efficient as regular benchmarks; and the combined use of gem5 along with McPAT offers a powerful and flexible tool to simulate any architecture modification on compute units.
 
-Our primary results validate the fact that ARM architecture consumes really less power than X86 standard one, unsurprisingly. But its power-performance ratio is up to 7 times better than a regular i5. On the hardware side, the cache size plays an important role in the performance, so one can imagine that some specific architecture could be developed, fitting the cache size (or type) to the data used for example.
+Our primary results validate the fact that ARM architecture unsurprisingly really does consume less power than x86 standard one, unsurprisingly. But its power-performance ratio is up to 7 times better than that of a regular i5. On the hardware side, the cache size plays an important role in the performance, so one can imagine that some specific architecture could be developed, fitting the cache size (or type) to the data used for example.
 
-In heterogeneous compute clusters, this method can be used to fine-tune the placement policy. Indeed, one can imagine a flexible machine composed by several compute units with various cache size, frequency, floating points and integer compute power. Simulating applications on these compute units individually can thus estimate which codelets fit better on which compute unit. During a real execution, the scheduler can based its decisions on these simulations to move on-the-fly an application to the compute unit which maximizing the performance-power ratio.
+In heterogeneous compute clusters, this method can be used to fine-tune the placement policy. Indeed, one can imagine a flexible machine composed by several compute units with various cache size, frequency, floating points and integer compute power. Simulating applications on these compute units individually can thus estimate which codelets fit better on which compute unit. During a real execution, the scheduler can base its decisions on these simulations to move on-the-fly an application to the compute unit which maximize the performance-power ratio.
 
 
-Even if only four CPUs are simulated, this results encourage to wisely choose the right architecture when selecting the hardware. That is why a conjoint development of future architectures, based on their efficiency for a specific use only, would be a great step forward in the conception of new architectures and lead to lower power consumption. 
+Even if only four CPUs are simulated, these results encourage to wisely choose the right architecture when selecting the hardware. That is why a conjoint development of future architectures, based on their efficiency for a specific use only, would be a great step forward in the conception of new architectures and lead to lower power consumption. 
 
 
 \end{multicols}
@@ -444,7 +444,7 @@ Even if only four CPUs are simulated, this results encourage to wisely choose th
 \section{Annexe}
 \subsection{ARM Simulation}
 \label{ARM_sim}
-As multicore benchmarks seem to hang on X86 simulation, some work has been done to adapt the codelet on ARM simulation.
+As multicore benchmarks seem to hang on x86 simulation, some work has been done to adapt the codelet on ARM simulation.
 The multicore simulation works with linaro-minimal.
 
 As capturing on ARM required an ARM machine, a few cross-compile instructions has been added in CERE. Capturing on gem5 may indeed take several days, and require moreover an ARM version of CERE pre-installed on the virtual machine, which was not ready at the time of this work. The goal is then to use an x86 memory dump and replay it on ARM systems. The following changes were made in CERE:
@@ -458,7 +458,7 @@ After those changes, the compilation ran successfully, but the execution outputs
 
 We found that the aarch64 architecture limits the application space to the address 0x00000000\_00000000 to 0x0000ffff\_ffffffff\cite{aarch64-mmu}.
 %PUT A PICTURE !!!!!
- But the stack is placed on x86 linux at address 0x07fda3c7\_b0000000 so the kernel kills the application as soon as the X86 stack region is reserved.
+ But the stack is placed on x86 linux at address 0x07fda3c7\_b0000000 so the kernel kills the application as soon as the x86 stack region is reserved.
 To avoid this issue, the stack has manually been moved to address 0x000003c7\_b0000000.
 
 NAS IS (codelet \_\_cere\_\_is\_ranked\_475) has been successfully replayed on a juno board (linaro-image-minimal-genericarmv8 system) using this trick. Nevertheless, further adaptations have to be done in order to safely convert x86 dumps to ARM dumps\footnote{Especially on pointers of stack address which need to be updated to the new stack position at the codelet compilation.}.
@@ -471,9 +471,9 @@ My first weeks were mostly occupied by bibliography and primary setup of differe
 
 I have worked mostly with Mihail Popov (Ph.D. student), Chadi Akel (Engineer), both involved in the development of CERE, and Yohan Chatelain, a M2 intern in charge of the RAM capture when replaying an OpenMP region. I have also been helped by Lavania Ramapantulu, an intern from Singapore, who worked as me on PARSEC benchmarks. At the end of my work, William Jalby came to me in order to see if all went right. Pablo was always there when I needed some precisions or to validate each step that I have presented to him.
 
-I spent two days during my internship at Polytechnique assisting to the Teratec forum. It was really interesting, as I could talk to other researchers and discover what they are working on.
+I spent two days during my internship at Polytechnique attending to the Teratec forum. It was really interesting, as I could talk to other researchers and discover what they are working on.
 
-I liked the atmosphere, as I was really free in my research, but I could easily ask somebody when I encountered hardships. I particularly enjoyed having a clear line of work and nevertheless free in my timing schedule and my way to tackle this subject.
+I liked the atmosphere, as I was really free in my research, but I could easily ask somebody when I encountered hardships. I particularly enjoyed having a clear line of work while being free in my timing schedule and my way to tackle this subject.
 
 \end{multicols}
 \newpage 
